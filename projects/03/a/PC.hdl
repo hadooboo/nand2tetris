@@ -17,4 +17,18 @@ CHIP PC {
 
     PARTS:
     // Put your code here:
+    Not(in=reset, out=notreset);
+    Not(in=load, out=notload);
+    Not(in=inc, out=notinc);
+    And(a=notreset, b=load, out=s00);
+    And(a=notreset, b=notload, out=s010);
+    And(a=s010, b=notinc, out=s01);
+    And(a=notreset, b=notload, out=s100);
+    And(a=s100, b=inc, out=s10);
+    Or(a=s00, b=s01, out=sel0);
+    Or(a=s10, b=s01, out=sel1);
+
+    Register(in=i, load=true, out=o, out=out);
+    Inc16(in=o, out=incout);
+    Mux4Way16(a=false, b=in, c=incout, d=o, sel[0]=sel0, sel[1]=sel1, out=i);
 }
