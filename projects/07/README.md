@@ -9,7 +9,7 @@ https://drive.google.com/file/d/1CITliwTJzq19ibBF5EeuNBZ3MJ01dKoI/view
 ## todo
 
 - [x] stack arithmetic commands translator
-- [ ] memory access commands translator
+- [x] memory access commands translator
 
 ## memo
 
@@ -89,3 +89,7 @@ M=0
 @SP
 M=M+1
 ```
+
+- 메모리 접근 명령 VM번역기: constant, local|argument|this|that, pointer|temp, static 경우를 나눠서 생각하면 된다. 책에서도 그렇게 설명하고 있다. pop을 할 때는 부득이하게 R13 가상 레지스터를 사용하였다. D 레지스터에 pop해오는 스택 값을 넣고 있으면 주소 계산이 불가능하고, 반대로 주소 계산 값을 들고 있으면 스택에서 pop을 해 오지 못하기 때문이다. push를 할 때는 주소가 @SP에 들어있기 때문에 가상 레지스터 사용 없이 바로 할당이 가능하다.
+  - local|argument|this|that의 경우에 대해서는 `base` 라고 명명하였다. RAM에서 4개의 segment를 가리키는 base address를 관리하고 base address가 가리키는 곳을 수정하기 때문이다. pointer|temp의 경우에 대해서는 `direct` 라고 명명하였다. RAM에 직접 값을 조작하기 때문이다.
+  - 리팩토링 과정에서 말이 되지 않는 케이스(ex. pop constant) 에 대한 panic 처리를 모두 제거하였다. 본 프로젝트의 목적이 정확한 구동을 위한 것이었으면 이렇게 해서는 안되겠지만, 목적이 깔끔하고 명료한 코드 작성에 있다고 생각하기 때문이다.
