@@ -43,8 +43,8 @@ type Parser struct {
 	arg2        int
 }
 
-func NewParser(fileName string) *Parser {
-	f, err := os.Open(fileName)
+func NewParser(readFilePath string) *Parser {
+	f, err := os.Open(readFilePath)
 	if err != nil {
 		panic(err)
 	}

@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -15,6 +14,9 @@ type CodewriterInterface interface {
 	WriteLabel(string)
 	WriteGoto(string)
 	WriteIf(string)
+	WriteFunction(string, int)
+	WriteCall(string, int)
+	WriteReturn()
 	Close()
 }
 
@@ -29,20 +31,37 @@ type Codewriter struct {
 	function string
 }
 
-func NewCodewriter(filePath string) *Codewriter {
-	f, err := os.Create(filePath)
+func NewCodewriter(writeFilePath string, isBootstrapNeeded bool) *Codewriter {
+	f, err := os.Create(writeFilePath)
 	if err != nil {
 		panic(err)
 	}
 
-	return &Codewriter{
+	codewriter := &Codewriter{
 		stream: bufio.NewWriter(f),
 		f:      f,
 	}
+
+	if isBootstrapNeeded {
+		codewriter.writeBootstrap()
+	}
+
+	return codewriter
+}
+
+func (r *Codewriter) writeBootstrap() {
+	res := strings.TrimSpace(`
+@256
+D=A
+@SP
+M=D
+	`)
+	fmt.Fprintln(r.stream, res)
+	r.WriteCall("Sys.init", 0)
 }
 
 func (r *Codewriter) SetFileName(fileName string) {
-	r.fileName = strings.TrimSuffix(filepath.Base(fileName), ".vm")
+	r.fileName = fileName
 }
 
 func (r *Codewriter) WriteArithmetic(command string) {
@@ -274,7 +293,7 @@ M=D
 
 func (r *Codewriter) WriteLabel(label string) {
 	if len(r.function) > 0 {
-		label = fmt.Sprintf("(%v$%v)", r.function, label)
+		label = fmt.Sprintf("%v$%v", r.function, label)
 	}
 	res := fmt.Sprintf("(%v)", label)
 	fmt.Fprintln(r.stream, res)
@@ -282,7 +301,7 @@ func (r *Codewriter) WriteLabel(label string) {
 
 func (r *Codewriter) WriteGoto(label string) {
 	if len(r.function) > 0 {
-		label = fmt.Sprintf("(%v$%v)", r.function, label)
+		label = fmt.Sprintf("%v$%v", r.function, label)
 	}
 	res := fmt.Sprintf("@%v\n0;JMP", label)
 	fmt.Fprintln(r.stream, res)
@@ -290,7 +309,7 @@ func (r *Codewriter) WriteGoto(label string) {
 
 func (r *Codewriter) WriteIf(label string) {
 	if len(r.function) > 0 {
-		label = fmt.Sprintf("(%v$%v)", r.function, label)
+		label = fmt.Sprintf("%v$%v", r.function, label)
 	}
 	base := strings.TrimSpace(`
 @SP
@@ -300,6 +319,136 @@ D=M
 D;JNE
 	`)
 	res := fmt.Sprintf(base, label)
+	fmt.Fprintln(r.stream, res)
+}
+
+func (r *Codewriter) WriteFunction(name string, nVars int) {
+	r.function = name
+	pushZero := strings.TrimSpace(`
+@SP
+A=M
+M=0
+@SP
+M=M+1
+	`)
+	var base, res string
+	if nVars == 0 {
+		base = strings.TrimSpace(`
+(%v)
+		`)
+		res = fmt.Sprintf(base, r.function)
+	} else {
+		base = strings.TrimSpace(`
+(%v)
+%v
+		`)
+		res = fmt.Sprintf(base, r.function, strings.TrimSpace(strings.Repeat(pushZero+"\n", nVars)))
+	}
+	fmt.Fprintln(r.stream, res)
+}
+
+func (r *Codewriter) WriteCall(name string, nArgs int) {
+	r.cnt++
+	label := fmt.Sprintf("%v$ret.%v", name, r.cnt)
+	base := strings.TrimSpace(`
+@%v
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@LCL
+D=M
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@ARG
+D=M
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@THIS
+D=M
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@THAT
+D=M
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@SP
+D=M
+@%v
+D=D-A
+@ARG
+M=D
+@SP
+D=M
+@LCL
+M=D
+@%v
+0;JMP
+(%v)
+	`)
+	res := fmt.Sprintf(base, label, 5+nArgs, name, label)
+	fmt.Fprintln(r.stream, res)
+}
+
+func (r *Codewriter) WriteReturn() {
+	res := strings.TrimSpace(`
+@LCL
+D=M
+@R13
+M=D
+@5
+A=D-A
+D=M
+@R14
+M=D
+@SP
+AM=M-1
+D=M
+@ARG
+A=M
+M=D
+@ARG
+D=M
+@SP
+M=D+1
+@R13
+AM=M-1
+D=M
+@THAT
+M=D
+@R13
+AM=M-1
+D=M
+@THIS
+M=D
+@R13
+AM=M-1
+D=M
+@ARG
+M=D
+@R13
+AM=M-1
+D=M
+@LCL
+M=D
+@R14
+A=M
+0;JMP
+	`)
 	fmt.Fprintln(r.stream, res)
 }
 

@@ -16,17 +16,18 @@ func main() {
 		panic(err)
 	}
 
-	var filePath string
+	var writeFilePath string
 	if fileInfo.IsDir() {
-		filePath = filepath.Join(filepath.Clean(os.Args[1]), fileInfo.Name()+".asm")
+		writeFilePath = filepath.Join(filepath.Clean(os.Args[1]), fileInfo.Name()+".asm")
 	} else {
-		filePath = filepath.Join(filepath.Dir(os.Args[1]), strings.TrimSuffix(fileInfo.Name(), ".vm")+".asm")
+		writeFilePath = filepath.Join(filepath.Dir(os.Args[1]), strings.TrimSuffix(fileInfo.Name(), ".vm")+".asm")
 	}
 
-	c := initCodewriter(filePath)
-	for _, fileName := range flattenFileNames(os.Args[1]) {
-		c.SetFileName(fileName)
-		p := initParser(fileName)
+	readFilePaths := flattenFilePaths(os.Args[1])
+	c := initCodewriter(writeFilePath, isBootstrapNeeded(readFilePaths))
+	for _, readFilePath := range readFilePaths {
+		c.SetFileName(strings.TrimSuffix(filepath.Base(readFilePath), ".vm"))
+		p := initParser(readFilePath)
 		for p.HasMoreCommands() {
 			p.Advance()
 			switch p.CommandType() {
@@ -42,6 +43,12 @@ func main() {
 				c.WriteGoto(p.Arg1())
 			case parser.C_IF:
 				c.WriteIf(p.Arg1())
+			case parser.C_FUNCTION:
+				c.WriteFunction(p.Arg1(), p.Arg2())
+			case parser.C_CALL:
+				c.WriteCall(p.Arg1(), p.Arg2())
+			case parser.C_RETURN:
+				c.WriteReturn()
 			}
 		}
 		p.Close()
@@ -49,7 +56,7 @@ func main() {
 	c.Close()
 }
 
-func flattenFileNames(src string) []string {
+func flattenFilePaths(src string) []string {
 	res := make([]string, 0)
 	filepath.Walk(src, func(path string, info fs.FileInfo, err error) error {
 		if strings.HasSuffix(path, ".vm") {
@@ -60,10 +67,19 @@ func flattenFileNames(src string) []string {
 	return res
 }
 
-func initParser(fileName string) parser.ParserInterface {
-	return parser.NewParser(fileName)
+func isBootstrapNeeded(readFilePaths []string) bool {
+	for _, readFilePath := range readFilePaths {
+		if filepath.Base(readFilePath) == "Sys.vm" {
+			return true
+		}
+	}
+	return false
 }
 
-func initCodewriter(filePath string) codewriter.CodewriterInterface {
-	return codewriter.NewCodewriter(filePath)
+func initParser(readFilePath string) parser.ParserInterface {
+	return parser.NewParser(readFilePath)
+}
+
+func initCodewriter(writeFilePath string, isBootstrapNeeded bool) codewriter.CodewriterInterface {
+	return codewriter.NewCodewriter(writeFilePath, isBootstrapNeeded)
 }
