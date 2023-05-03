@@ -43,7 +43,17 @@ func (r *CompilationEngine) PrintTokensXML() {
 		case jacktokenizer.KEYWORD:
 			fmt.Fprintf(r.stream, "<keyword> %s </keyword>\n", r.jt.Keyword())
 		case jacktokenizer.SYMBOL:
-			fmt.Fprintf(r.stream, "<symbol> %s </symbol>\n", r.jt.Symbol())
+			symbol := r.jt.Symbol()
+			if symbol == "<" {
+				symbol = "&lt;"
+			}
+			if symbol == ">" {
+				symbol = "&gt;"
+			}
+			if symbol == "&" {
+				symbol = "&amp;"
+			}
+			fmt.Fprintf(r.stream, "<symbol> %s </symbol>\n", symbol)
 		case jacktokenizer.INT_CONST:
 			fmt.Fprintf(r.stream, "<integerConstant> %d </integerConstant>\n", r.jt.IntVal())
 		case jacktokenizer.STRING_CONST:
