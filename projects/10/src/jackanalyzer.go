@@ -2,20 +2,35 @@ package main
 
 import (
 	"io/fs"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"jaehonam.com/nand2tetris/project/10/compilationegine"
-	"jaehonam.com/nand2tetris/project/10/jacktokenizer"
 )
 
 func main() {
+	if len(os.Args) < 2 {
+		log.Fatalf("usage: ./jackanalyzer [filepath to compile] [tokens|all]")
+	}
+	var fileSuffix string
+	if os.Args[2] == "tokens" {
+		fileSuffix = "T.out.xml"
+	} else if os.Args[2] == "all" {
+		fileSuffix = ".out.xml"
+	} else {
+		log.Fatalf("invalid operation: %v", os.Args[2])
+	}
+
 	for _, readFilePath := range flattenFilePaths(os.Args[1]) {
-		jt := initJackTokenizer(readFilePath)
-		writeFilePath := filepath.Join(filepath.Dir(readFilePath), strings.ReplaceAll(filepath.Base(readFilePath), ".jack", "T.out.xml"))
-		ce := initCompilationEngine(jt, writeFilePath)
-		ce.PrintTokensXML()
+		writeFilePath := strings.TrimSuffix(readFilePath, ".jack") + fileSuffix
+		ce := initCompilationEngine(readFilePath, writeFilePath)
+		if os.Args[2] == "tokens" {
+			ce.PrintTokensXML()
+		} else if os.Args[2] == "all" {
+			ce.PrintXML()
+		}
 		ce.Close()
 	}
 }
@@ -31,10 +46,6 @@ func flattenFilePaths(src string) []string {
 	return res
 }
 
-func initJackTokenizer(readFilePath string) jacktokenizer.JackTokenizerInterface {
-	return jacktokenizer.NewJackTokenizer(readFilePath)
-}
-
-func initCompilationEngine(jt jacktokenizer.JackTokenizerInterface, writeFilePath string) compilationegine.CompilationEngineInterface {
-	return compilationegine.NewCompilationEngine(jt, writeFilePath)
+func initCompilationEngine(readFilePath, writeFilePath string) compilationegine.CompilationEngineInterface {
+	return compilationegine.NewCompilationEngine(readFilePath, writeFilePath)
 }

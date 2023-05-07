@@ -10,6 +10,7 @@ import (
 type JackTokenizerInterface interface {
 	HasMoreTokens() bool
 	Advance()
+	Retreat()
 	TokenType() TokenType
 	Keyword() string
 	Symbol() string
@@ -117,6 +118,10 @@ func (r *JackTokenizer) HasMoreTokens() bool {
 
 func (r *JackTokenizer) Advance() {
 	r.p++
+}
+
+func (r *JackTokenizer) Retreat() {
+	r.p--
 }
 
 func (r *JackTokenizer) TokenType() TokenType {

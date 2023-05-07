@@ -9,7 +9,7 @@ https://drive.google.com/file/d/1O1nTS24VM2kp_ilTZCrBZOryhTK1e0qN/view
 ## todo
 
 - [x] JackTokenizer
-- [ ] CompilationEngine
+- [x] CompilationEngine
 
 ## memo
 
@@ -28,3 +28,11 @@ https://drive.google.com/file/d/1O1nTS24VM2kp_ilTZCrBZOryhTK1e0qN/view
     - `identifierRegex`(`\b[a-zA-Z_]\w*\b`): non-word 사이에 있는 (숫자를 제외한 word) + word 리스트를 찾는다.
   - ~~symbol 중에서 '<', '>', '&' 는 XML encoding을 위해 각각 `&lt;`, `&gt;`, `&amp;`로 변환해서 반환한다. 이것은 XML encoding을 하는 쪽에서 변환해서 사용하는 것이 좋다고 생각하지만, 현재 프로젝트에서 XML 외에 다른 포맷으로 변환하지도 않기도 하고 깔끔한 구현을 위해 이렇게 선택하였다.~~ => XML encoding 쪽에서 변환하는 방식으로 변경하였다. 다만 쉬운 변환을 위해 byte 타입 대신 string 타입을 사용한다.
   - XML 출력을 위해 `encoding/xml` 모듈을 사용하지는 않았고 raw string을 이용하여 출력하였다. 이렇게 한 것은 현재 출력하는 tokens XML이 완전한 XML 문법을 지키는 것이 아니기 때문에 오히려 복잡해지기 때문이다. 같은 계층에서 여러 같은 키가 순서가 중요한 채로 출력되어야 하는 것이 공식 문법과 다른 점이다.
+- 구문 분석기
+  - 크게 3가지 종류의 메소드로 구성된다. `compileXXX`, `mustPrintXXX`, `isXXX` 이다.
+  - `compileXXX`: 책에서 인터페이스로 구현하라고 소개한 메소드들을 말한다. xml에서 보면 tag로 감싸져있는 class, classVarDec 등의 부분을 말한다. 따라서 메소드의 시작과 끝은 xml tag를 열고 닫는 출력문이다.
+  - `mustPrintXXX`: keyword, symbol, integer constant, string constant, identifier 5개의 기초 단위를 xml tag로 감싸 출력하는 부분이다.
+  - `isXXX`: 다음으로 만날 token을 보고 어떤 구성 원소를 만나는지 확인해주는 메소드이다. 예를 들어, 다음으로 만날 token이 op인지 아닌지 확인하는 것이다. 이 메소드에서 주의해야 할 것은 `Advance` 를 통해 token pointer를 전진시켜 원하는 조건을 확인한 다음 `Retreat` 를 통해 token pointer를 되돌려놓아야 한다는 것이다. 그렇게 해야 원하는 조건을 마주치지 않은 경우에도 다음 로직으로 제대로 전진할 수 있고, 출력문을 작성하기도 깔끔해진다. golang은 `defer` 문법을 제공하기 때문에 `Retreat` 를 메소드 종료 로직에 간단히 등록만 하면 된다.
+  - `Retreat` 는 책에서 인터페이스로 제공하라고 한 메소드가 아니다. 만약에 전체 코드를 파싱해서 token array로 만든 다음 token pointer를 이용하는 지금 방식이 아니라 문자열을 순차적으로 읽어가며 token을 만드는 경우를 생각하면 이 메소드가 존재할 수 있을지 생각해보아야 한다. 간단하게 구현할 수 있는 방법으로 생각해 본 것은 tokenizer에 스택 버퍼를 만들어 놓고 `Retreat` 를 하는 경우 버퍼에 쌓아두는 것이다. 만약 `Advance` 를 할 때 스택 버퍼에 무언가 존재할 경우 간단히 최상단에 있는 값을 pop하여 반환하면 된다.
+  - 구분 분석기를 구현하면서 완전하게 구현하려고 하지는 않았다. 각각의 구성 원소에서 원하는 keyword, symbol 등등이 맞는지 철저하게 검사할 수도 있을 것이다. 메소드의 시작만 봐도 `class` keyword로 시작하지 않는 경우 바로 문제가 생긴다. 그러나 철저한 컴파일러를 만드는 것은 이 프로젝트를 진행하는 목적에서 벗어난다. 전체적인 그림을 그리려고 하는 것이지 완벽하게 동작하는 컴파일러를 만드려고 하는 것이 아니기 때문이다.
+  - `test.sh` 파일을 만들어서 테스트를 계속해서 진행하면서 리팩토링하였다. 리팩토링에서 가장 중요한 것은 input output이 동일하게 유지되는지 확인하면서 변경해나가는 것이다.
