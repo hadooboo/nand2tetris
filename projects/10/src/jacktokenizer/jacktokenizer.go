@@ -87,11 +87,6 @@ func (r *JackTokenizer) tokenize(data string) {
 				tokenType: KEYWORD,
 				keyword:   t,
 			})
-		} else if symbolRegex.MatchString(t) {
-			r.tokens = append(r.tokens, Token{
-				tokenType: SYMBOL,
-				symbol:    t,
-			})
 		} else if intRegex.MatchString(t) {
 			v, _ := strconv.ParseInt(t, 10, 64)
 			r.tokens = append(r.tokens, Token{
@@ -102,6 +97,11 @@ func (r *JackTokenizer) tokenize(data string) {
 			r.tokens = append(r.tokens, Token{
 				tokenType: STRING_CONST,
 				stringVal: t[1 : len(t)-1],
+			})
+		} else if symbolRegex.MatchString(t) {
+			r.tokens = append(r.tokens, Token{
+				tokenType: SYMBOL,
+				symbol:    t,
 			})
 		} else if identifierRegex.MatchString(t) {
 			r.tokens = append(r.tokens, Token{
