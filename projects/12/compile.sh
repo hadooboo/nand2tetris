@@ -10,6 +10,7 @@ fi
 testDir="$1Test"
 testFile="$1.jack"
 tempDir="tmp_$testDir"
+rm -rf "$tempDir"
 cp -r "$testDir" "$tempDir"
 for item in "${class[@]}"; do
     cp "../../tools/OS/$item.vm" "$tempDir"

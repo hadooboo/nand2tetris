@@ -9,12 +9,46 @@
  */
 class Math {
 
+    static Array bitMasks;
+
     /** Initializes the library. */
     function void init() {
+        do Math.initBitMasks();
+        return;
+    }
+
+    function void initBitMasks() {
+        let bitMasks = Array.new(16);
+        let bitMasks[0] = 1;
+        let bitMasks[1] = 2;
+        let bitMasks[2] = 4;
+        let bitMasks[3] = 8;
+        let bitMasks[4] = 16;
+        let bitMasks[5] = 32;
+        let bitMasks[6] = 64;
+        let bitMasks[7] = 128;
+        let bitMasks[8] = 256;
+        let bitMasks[9] = 512;
+        let bitMasks[10] = 1024;
+        let bitMasks[11] = 2048;
+        let bitMasks[12] = 4096;
+        let bitMasks[13] = 8192;
+        let bitMasks[14] = 16384;
+        let bitMasks[15] = 32767;
+        let bitMasks[15] = ~bitMasks[15];
+        return;
     }
 
     /** Returns the absolute value of x. */
     function int abs(int x) {
+        if (x < 0) {
+            return -x;
+        }
+        return x;
+    }
+
+    function bool bits(int x, int j) {
+        return x & bitMasks[j];
     }
 
     /** Returns the product of x and y. 
@@ -23,6 +57,16 @@ class Math {
      *  the Jack expressions x*y and multiply(x,y) return the same value.
      */
     function int multiply(int x, int y) {
+        var int res, j, tmp;
+        let tmp = x;
+        while (j < 16) {
+            if (Math.bits(y, j)) {
+                let res = res + tmp;
+            }
+            let tmp = tmp + tmp;
+            let j = j + 1;
+        }
+        return res;
     }
 
     /** Returns the integer part of x/y.
@@ -31,17 +75,58 @@ class Math {
      *  the Jack expressions x/y and divide(x,y) return the same value.
      */
     function int divide(int x, int y) {
+        var int _x, _y, _yy, q;
+        let _x = Math.abs(x);
+        let _y = Math.abs(y);
+        if (_y > _x) {
+            return 0;
+        }
+        let _yy = _y + _y;
+        if (_yy < 0) {
+            let q = 0;
+        } else {
+            let q = Math.divide(_x, _yy);
+        }
+        if ((_x - (_yy * q)) < _y) {
+            let q = q + q;
+        } else {
+            let q = q + q + 1;
+        }
+        if ((x < 0) = (y < 0)) {
+            return q;
+        } else {
+            return -q;
+        }
     }
 
     /** Returns the integer part of the square root of x. */
     function int sqrt(int x) {
+        var int res, j, tmp;
+        let j = 7;
+        while (~(j < 0)) {
+            let tmp = res + bitMasks[j];
+            let tmp = tmp * tmp;
+            if (~(tmp < 0) & ~(tmp > x)) {
+                let res = res + bitMasks[j];
+            }
+            let j = j - 1;
+        }
+        return res;
     }
 
     /** Returns the greater number. */
     function int max(int a, int b) {
+        if (a < b) {
+            return b;
+        }
+        return a;
     }
 
     /** Returns the smaller number. */
     function int min(int a, int b) {
+        if (a < b) {
+            return a;
+        }
+        return b;
     }
 }
