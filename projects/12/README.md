@@ -8,8 +8,8 @@ https://drive.google.com/file/d/1Qeuor0zqUAR0Q6xGPCuwdfYDAQILjbEm/view
 
 ## todo
 
-- [ ] Array
-- [ ] Keyboard
+- [x] Array
+- [x] Keyboard
 - [x] Math
 - [ ] Memory
 - [ ] Output
@@ -30,3 +30,11 @@ https://drive.google.com/file/d/1Qeuor0zqUAR0Q6xGPCuwdfYDAQILjbEm/view
   - sqrt 알고리즘을 해석하는 방법은 다음과 같다. 우선 음수의 루트는 계산을 하지 않을 것이기 때문에 양수만 생각한다. 양수 중에서 가장 큰 32767이 2^8 의 제곱보다 작기 때문에 2^7부터 2^6, ..., 2^0 에 대해서 계산한다. 계산은 "지금 이 숫자를 더해서 제곱했을 때 인풋보다 작거나 같게 유지될 것이냐" 에 대한 것이다. 제곱이 아니라 10진수를 2진수로 변환할 때를 연상하면 간단한데, 13이라는 숫자가 있을 때 "일단 2의 거듭제곱 중 8부터 쓰고, 남은 5를 만들기 위해 4를 쓰고, 남은 1을 만들기 위해 1을 쓰고" 해서 2진수를 만든다. 이를 다시 쓰면, 13보다 작은 2의 거듭제곱 중 큰 것부터 작은 순서대로 더해가는데, 8은 되니까 쓰고, 4는 되니까 쓰고, 2는 더하면 13을 넘어버리니까 쓰지 말고, 1은 되니까 쓰는 것이다. 이것을 sqrt에 적용해보면, 예를 들어 2^7은 되니까 쓰고, 2^6은 더해서 제곱하면 인풋을 넘어버리니까 쓰지 말고, ..., 2^0은 되니까 쓰는 것이다.
   - http://nand2tetris-questions-and-answers-forum.52.s1.nabble.com/MathTest-tst-fails-even-with-provided-OS-vm-files-td4036143.html
     - 나도 1,000,000회의 vmstep으로는 결과가 정상적으로 계산되지 않았다. 더 효율적으로 코드를 작성하면 통과하는 것인지.. 의문스럽긴 하다.
+- Keyboard
+  - 현재 키보드에 입력 중인 문자는 `Memory.peek(24576)` 을 이용해 알 수 있다.
+  - readChar를 구현할 때는 backSpace는 출력하면 안 된다. backSpace는 어떤 문자가 화면에 출력되기를 원하고 누르는 것이 아니라 기존에 입력된 문자를 취소하고 싶은 상황인 것이다. 현재 커서에 있는 것을 무조건 지우려고 하면 기존에 콘솔에 출력된 문자까지 지워버린다.
+  - readString을 구현할 때는 readChar를 무한 반복으로 읽다가, newLine을 만나는 경우 리턴하고, backSpace를 만나는 경우 현재 문자열의 길이가 1 이상일 때에 한해 `s.eraseLastChar()`, `Output.printChar(String.backSpace())` 를 연속적으로 호출하여 문자 하나를 메모리와 화면에서 지운다.
+  - readInt는 readString과 String의 intValue 메소드를 이용하여 간단하게 구현할 수 있다.
+- Array
+  - dispose를 할 때, 자기 자신의 주소가 어차피 `Memory.alloc` 함수를 통해 받은 base address이므로 `Memory.deAlloc(this)` 를 통해 자신의 위치 자체의 메모리를 반납하면 된다.
+  - Math에서와 마찬가지로 1,000,000회의 vmstep으로는 결과가 정상적으로 계산되지 않았다. 2,000,000회로 변경해두었다.
