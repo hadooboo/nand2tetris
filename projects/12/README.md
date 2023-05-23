@@ -12,8 +12,8 @@ https://drive.google.com/file/d/1Qeuor0zqUAR0Q6xGPCuwdfYDAQILjbEm/view
 - [x] Keyboard
 - [x] Math
 - [ ] Memory
-- [ ] Output
-- [ ] Screen
+- [x] Output
+- [x] Screen
 - [x] String
 - [x] Sys
 
@@ -38,3 +38,15 @@ https://drive.google.com/file/d/1Qeuor0zqUAR0Q6xGPCuwdfYDAQILjbEm/view
 - Array
   - dispose를 할 때, 자기 자신의 주소가 어차피 `Memory.alloc` 함수를 통해 받은 base address이므로 `Memory.deAlloc(this)` 를 통해 자신의 위치 자체의 메모리를 반납하면 된다.
   - Math에서와 마찬가지로 1,000,000회의 vmstep으로는 결과가 정상적으로 계산되지 않았다. 2,000,000회로 변경해두었다.
+- Output
+  - `printChar` 는 newLine, backSpace의 경우를 갈라 다르게 처리하고 나머지 경우에만 어떤 문자를 스크린에 출력한다. 문자를 출력할 때는 `Screen.drawPixel` 함수를 연속적으로 호출하는 방법도 있지만, 속도가 굉장히 느려진다. 직접 메모리를 참조하여 메모리의 값을 바꿔버리는 것이 훨씬 빠르다. 실제 하드웨어를 구현할 때도 이런 식으로 하지 않을까.
+  - `printString` 은 `printChar`, `printInt` 는 `printString` 을 이용하여 쉽게 만들 수 있다.
+- Screen
+  - `drawPixel` 은 메모리 참조 주소를 찾은 후 검정색으로 칠하는 경우 00001000과 or-ing, 하얀색으로 칠하는 경우 11110111과 and-ing을 하면 된다.
+  - `drawLine` 은 경우를 다음과 같이 4개로 나누어 생각한다.
+    - x1==x2 && y1==y2: 그냥 점을 그리는 것이다.
+    - x1==x2 && y1!=y2: vertical line을 그린다. x 좌표 고정해놓고 linear 하게 그리면 된다.
+    - x1!=x2 && y1==y2: horizontal line을 그린다. y 좌표 고정해놓고 linear 하게 그리면 된다.
+    - x1!=x2 && y1!=y2: a는 (x1, y1) 으로 부터 x축에서 진행한 거리, b는 y축에서 진행한 거리라고 정의한다. `b/a < dy/dx` 가 되는 경우 b++ 해서 기울기를 증가시키고, 반대의 경우 a++을 해서 기울기를 낮춰버리면 된다. 진행 방향은 4사분면과 같이 4방향으로 정의할 수 있는데, a, b, dx, dy는 양수라고 생각하고, 방향에 따라 x1 +- a, y1 +- b 에 `drawPixel` 을 하면 된다. `b/a < dy/dx` 를 매번 계산하는 것은 고비용의 작업이다. 이를 다시 쓰면 `b*dx - a*dy < 0` 이기 때문에 왼쪽 항을 변수로 선언해 두고 계속해서 그 값을 업데이트한다고 생각한다. 예를 들어, `b*dx - a*dy` 가 음수라서 b를 증가시켰다. 그 값을 b1 이라고 하자. 그러면, `b1*dx - a*dy == (b+1)*dx - a*dy = (b*dx - a*dy) + dx` 이다. 따라서 기존 값에 dx만 더해주면 된다.
+  - `drawRectangle` 은 정말 간단하다. `drawLine` 을 y축에 대해서든, x축에 대해서든 그 높이 또는 너비만큼 반복하면 된다.
+  - `drawCircle` 은 (x, y) 로부터 거리가 r 이하인 점들에 대해 값을 그려주면 된다. 그렇다면 피타고라스 정리, `x*x + y*y <= r*r` 을 매번 적용할 것인가? 이것은 고비용의 작업이다. `drawLine` 과 같은 트릭을 적용한다. 시작을 원 가운데의 가장 좌우로 긴 `2*r` 길이의 선을 골랐다고 하자. 고정된 y 값에 대해 y축에서 가장 멀면서 원에 포함되는 점의 거리를 a, 반대로 x축에 대한 값을 b라고 하자. b는 0, a는 r로 시작한 셈이다. xx의 값을 `a*a`, yy의 값을 `b*b`, rr의 값을 `r*r` 로 정의한다. xx, yy, rr은 변수명에서도 알 수 있듯이 피타고라스 정리에서 `x*x`, `y*y`, `r*r` 을 의미할 것이다. 이제 y축 기준으로 하나 위, 하나 아래의 선을 그리려고 한다. yy의 값은 이제 `(b+1)(b+1)` 이 되어야 할 것이다. 이것을 매번 곱셉 연산으로 계산하지 않고 완전제곱식으로 풀어 쓴 `b*b + 2*b + 1` 을 적용해보자. 기존 `b*b` 값에 `2*b + 1`, 즉 `b + b + 1` 을 더해주면 된다. 마지막으로 b를 1 증가시킨다. 이렇게 하면 yy는 완성되었다. 이제 `xx + yy <= rr` 을 만족하도록 xx의 값을 변경해야 한다. rr은 고정이고, yy가 증가했으므로 xx는 감소시키며 계산하면 된다. `(a-1)(a-1) == a*a - 2*a - 1` 이므로 `xx + yy <= rr` 을 만족할 때까지 `- a - a + 1` 을 더해주면서 a 또한 1씩 빼면 된다. 이제 `drawLine` 을 할 차례다. 가장 왼쪽은 `x-a` 로부터 가장 오른쪽은 `x+a` 이고, 현재 y는 `y-b`, `y+b` 고정이므로 `drawLine` 을 2회 하면 된다. 이렇게 해서 `a==0` 이 될 때까지 반복한다.
